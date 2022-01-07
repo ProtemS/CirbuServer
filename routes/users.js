@@ -1,9 +1,25 @@
-import { Router } from "express";
+import e, { Router } from "express";
 import User from "../models/user.js";
-import { genSalt, hash } from "bcrypt";
+import { genSalt, hash, compare } from "bcrypt";
 import jwt from "jsonwebtoken";
 
 const router = Router();
+
+router.post("/login", async (req, res) => {
+  const { username, password } = req.body;
+  const user = await User.findOne({ username });
+  if (!user) return res.status(400).json({ msg: "No such user exists" });
+  if (compare(password, user.passwordHash)) {
+    // jwt sign in token
+    const token = jwt.sign(
+      { userId: uploadedUser.__id },
+      process.env.JWT_SECRET
+    );
+
+    return res.json({ token });
+  }
+  return res.status(400).json({ msg: "Username and password do not match" });
+});
 
 router.post("/register", async (req, res) => {
   try {
@@ -16,7 +32,7 @@ router.post("/register", async (req, res) => {
       return res
         .status(400)
         .json({ msg: "All fields must be of type string." });
-    if (gender !== "male" && gender !== "female")
+    if (gender !== "Male" && gender !== "Female")
       return res
         .status(400)
         .json({ msg: `404 gender "${gender}" doesn't exist .` });
@@ -47,6 +63,18 @@ router.post("/register", async (req, res) => {
   } catch (err) {
     console.error("rip " + err.message);
     res.status(500).json({ errorMsg: err.message });
+  }
+});
+
+router.post("/loggedIn", (req, res) => {
+  const { token } = req.body;
+  if (!token) return res.json(false);
+
+  try {
+    jwt.verify(token, process.env.JWT_SECRET);
+    return res.json(true);
+  } catch (err) {
+    return res.json(false);
   }
 });
 
