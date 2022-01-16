@@ -9,12 +9,10 @@ router.post("/login", async (req, res) => {
   const { username, password } = req.body;
   const user = await User.findOne({ username });
   if (!user) return res.status(400).json({ msg: "No such user exists" });
-  if (compare(password, user.passwordHash)) {
+  if (await compare(password + process.env.PEPPER, user.passwordHash)) {
     // jwt sign in token
-    const token = jwt.sign(
-      { userId: uploadedUser.__id },
-      process.env.JWT_SECRET
-    );
+    const token = jwt.sign({ userId: user.__id }, process.env.JWT_SECRET);
+    console.log(token);
 
     return res.json({ token });
   }
